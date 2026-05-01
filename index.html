@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interest Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #14171f;
+    --card: #1b1f2a;
+    --border: #2a2f3e;
+    --accent: #f0c040;
+    --accent2: #4af0a0;
+    --text: #e8eaf0;
+    --muted: #6b7191;
+    --input-bg: #0d0f14;
+    --radius: 12px;
+    --glow: 0 0 24px rgba(240,192,64,0.18);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240,192,64,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240,192,64,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 540px;
+  }
+
+  .header { margin-bottom: 1.8rem; }
+  .header .tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.2rem;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .header h1 span { color: var(--accent); }
+  .header p {
+    margin-top: 0.6rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Nav tabs */
+  .nav-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.4rem;
+  }
+  .nav-tab {
+    flex: 1;
+    padding: 0.65rem 0.5rem;
+    text-align: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .nav-tab.active { background: var(--accent); color: #0d0f14; }
+  .nav-tab:not(.active):hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 30px; right: 30px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.6;
+  }
+
+  /* Sections */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Dropdowns row */
+  .dropdowns-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .field label {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Fixed rate badge */
+  .rate-badge {
+    display: flex;
+    align-items: center;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.88rem;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  select, input[type="number"], input[type="text"], input[type="date"] {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.88rem;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6) sepia(1) saturate(3) hue-rotate(5deg);
+    cursor: pointer;
+  }
+
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    pointer-events: none;
+    font-size: 0.8rem;
+  }
+
+  select:focus, input[type="number"]:focus,
+  input[type="text"]:focus, input[type="date"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(240,192,64,0.12);
+  }
+
+  select option { background: var(--card); color: var(--text); }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.5rem 0;
+  }
+
+  /* Date range */
+  .date-range-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .day-count-pill {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(240,192,64,0.08);
+    border: 1px solid rgba(240,192,64,0.2);
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    margin-top: 0.2rem;
+  }
+  .day-count-pill.visible { display: flex; }
+
+  /* Conditional blocks */
+  .cond-block {
+    display: none;
+    margin-bottom: 0;
+    animation: slideIn 0.3s ease;
+  }
+  .cond-block.visible { display: block; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Amount */
+  .amount-field { margin-bottom: 1.5rem; }
+  .amount-wrap { position: relative; }
+  .amount-wrap .currency {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+  .amount-wrap input { padding-left: 2.2rem; }
+
+  /* Button */
+  .btn-calc {
+    width: 100%;
+    padding: 0.9rem;
+    background: var(--accent);
+    color: #0d0f14;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+  }
+  .btn-calc:hover { background: #f5d060; box-shadow: var(--glow); transform: translateY(-1px); }
+  .btn-calc:active { transform: translateY(0); }
+
+  /* Result */
+  .result-panel {
+    display: none;
+    margin-top: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    animation: fadeUp 0.35s ease;
+  }
+  .result-panel.visible { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+  .result-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--accent2);
+    letter-spacing: -0.02em;
+    word-break: break-all;
+  }
+  .result-formula {
+    margin-top: 0.8rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 2;
+    border-top: 1px solid var(--border);
+    padding-top: 0.8rem;
+  }
+  .result-formula span.hl { color: var(--accent); }
+  .result-formula .step { display: block; }
+
+  /* Error */
+  .error-msg {
+    display: none;
+    font-size: 0.75rem;
+    color: #f06060;
+    margin-top: 0.3rem;
+  }
+  .error-msg.visible { display: block; }
+
+  .footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <span class="tag">// Finance Tool</span>
+    <h1>Interest <span>Calc</span></h1>
+    <p>Compute interest with precision rounding across multiple account types.</p>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('regular')">Regular Account</button>
+    <button class="nav-tab" onclick="switchTab('incentive')">Incentives</button>
+  </div>
+
+  <div class="card">
+
+    <!-- ══════════════ REGULAR ACCOUNT ══════════════ -->
+    <div class="section active" id="section-regular">
+
+      <div class="dropdowns-row">
+        <div class="field">
+          <label>Interest Rate</label>
+          <div class="select-wrap">
+            <select id="reg-interest">
+              <option value="0.0175">1.75%</option>
+              <option value="0.05">5%</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Period</label>
+          <div class="select-wrap">
+            <select id="reg-period" onchange="onRegPeriodChange()">
+              <option value="monthly">Monthly</option>
+              <option value="15days">Every 15 Days</option>
+              <option value="daily">Daily</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date range shown only for daily -->
+      <div class="cond-block" id="reg-date-block">
+        <div class="date-range-row">
+          <div class="field">
+            <label>Start Date</label>
+            <input type="date" id="reg-date-start" onchange="onRegDatesChange()">
+          </div>
+          <div class="field">
+            <label>End Date</label>
+            <input type="date" id="reg-date-end" onchange="onRegDatesChange()">
+          </div>
+        </div>
+        <div class="day-count-pill" id="reg-day-pill">
+          📅 <strong id="reg-day-count">0</strong>&nbsp;days between selected dates
+        </div>
+        <span class="error-msg" id="reg-date-error">End date must be after start date.</span>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field amount-field">
+        <label>Principal Amount</label>
+        <div class="amount-wrap">
+          <span class="currency">₱</span>
+          <input type="text" id="reg-amount" placeholder="0.00" inputmode="decimal" oninput="formatAmountInput(this)">
+        </div>
+        <span class="error-msg" id="reg-amount-error">Please enter a valid amount.</span>
+      </div>
+
+      <button class="btn-calc" onclick="calcRegular()">Calculate Interest →</button>
+
+      <div class="result-panel" id="reg-result">
+        <div class="result-label">Interest Amount</div>
+        <div class="result-value" id="reg-result-value">—</div>
+        <div class="result-formula" id="reg-result-formula"></div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ INCENTIVES ══════════════ -->
+    <div class="section" id="section-incentive">
+
+      <div class="dropdowns-row">
+        <div class="field">
+          <label>Interest Rate</label>
+          <div class="select-wrap">
+            <select id="inc-interest">
+              <option value="0.0175">1.75%</option>
+              <option value="0.03" selected>3%</option>
+              <option value="0.05">5%</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Term</label>
+          <div class="select-wrap">
+            <select id="inc-period" onchange="onIncPeriodChange()">
+              <option value="monthly">Monthly</option>
+              <option value="daily">Daily</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date range always shown for incentives -->
+      <div class="date-range-row">
+        <div class="field">
+          <label>Start Date</label>
+          <input type="date" id="inc-date-start" onchange="onIncDatesChange()">
+        </div>
+        <div class="field">
+          <label>End Date</label>
+          <input type="date" id="inc-date-end" onchange="onIncDatesChange()">
+        </div>
+      </div>
+      <div class="day-count-pill" id="inc-day-pill">
+        📅 <span id="inc-date-summary">—</span>
+      </div>
+      <span class="error-msg" id="inc-date-error">End date must be after start date.</span>
+
+      <hr class="divider">
+
+      <div class="field amount-field">
+        <label>Principal Amount</label>
+        <div class="amount-wrap">
+          <span class="currency">₱</span>
+          <input type="text" id="inc-amount" placeholder="0.00" inputmode="decimal" oninput="formatAmountInput(this)">
+        </div>
+        <span class="error-msg" id="inc-amount-error">Please enter a valid amount.</span>
+      </div>
+
+      <button class="btn-calc" onclick="calcIncentive()">Calculate Incentive →</button>
+
+      <div class="result-panel" id="inc-result">
+        <div class="result-label">Incentive Amount</div>
+        <div class="result-value" id="inc-result-value">—</div>
+        <div class="result-formula" id="inc-result-formula"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="footer">PRECISION · ROUNDING · 2 DECIMAL PLACES</div>
+</div>
+
+<script>
+  // ── Utilities ──────────────────────────────────────────────────────────────
+
+  function fmt(n) {
+    const r = Math.round(n * 100) / 100;
+    return r.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function r2(n) { return Math.round(n * 100) / 100; }
+
+  function getRaw(el) { return parseFloat(el.value.replace(/,/g, '')); }
+
+  function formatAmountInput(el) {
+    let raw = el.value.replace(/,/g, '').replace(/[^\d.]/g, '');
+    const parts = raw.split('.');
+    if (parts.length > 2) raw = parts[0] + '.' + parts.slice(1).join('');
+    const intPart = (parts[0] || '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const decPart = parts[1] !== undefined ? '.' + parts[1] : '';
+    const cursorFromRight = el.value.length - el.selectionStart;
+    el.value = intPart + decPart;
+    const newPos = Math.max(0, el.value.length - cursorFromRight);
+    el.setSelectionRange(newPos, newPos);
+  }
+
+  // Days from start to end (e.g. Mar 30 → Apr 10 = 11 days)
+  function daysBetween(startStr, endStr) {
+    const s = new Date(startStr + 'T00:00:00');
+    const e = new Date(endStr   + 'T00:00:00');
+    return Math.round((e - s) / (1000 * 60 * 60 * 24));
+  }
+
+  // Split a date range into full calendar months + leftover days
+  function splitMonthsDays(startStr, endStr) {
+    let cur = new Date(startStr + 'T00:00:00');
+    const end = new Date(endStr + 'T00:00:00');
+    let months = 0;
+    while (true) {
+      const next = new Date(cur);
+      next.setMonth(next.getMonth() + 1);
+      if (next <= end) { months++; cur = next; }
+      else break;
+    }
+    const remDays = Math.round((end - cur) / (1000 * 60 * 60 * 24));
+    return { months, remDays };
+  }
+
+  function h(txt) { return `<span class="hl">${txt}</span>`; }
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  function switchTab(tab) {
+    document.querySelectorAll('.nav-tab').forEach((t, i) => {
+      t.classList.toggle('active', (tab === 'regular' && i === 0) || (tab === 'incentive' && i === 1));
+    });
+    document.getElementById('section-regular').classList.toggle('active', tab === 'regular');
+    document.getElementById('section-incentive').classList.toggle('active', tab === 'incentive');
+  }
+
+  // ── REGULAR ACCOUNT ───────────────────────────────────────────────────────
+
+  function onRegPeriodChange() {
+    const period = document.getElementById('reg-period').value;
+    const block  = document.getElementById('reg-date-block');
+    if (period === 'daily') {
+      block.classList.add('visible');
+    } else {
+      block.classList.remove('visible');
+      document.getElementById('reg-day-pill').classList.remove('visible');
+    }
+    document.getElementById('reg-result').classList.remove('visible');
+  }
+
+  function onRegDatesChange() {
+    const s = document.getElementById('reg-date-start').value;
+    const e = document.getElementById('reg-date-end').value;
+    const pill = document.getElementById('reg-day-pill');
+    const err  = document.getElementById('reg-date-error');
+    if (s && e) {
+      const d = daysBetween(s, e);
+      if (d <= 0) { pill.classList.remove('visible'); err.classList.add('visible'); return; }
+      err.classList.remove('visible');
+      document.getElementById('reg-day-count').textContent = d;
+      pill.classList.add('visible');
+    }
+  }
+
+  function calcRegular() {
+    let valid = true;
+
+    const amtEl  = document.getElementById('reg-amount');
+    const amount = getRaw(amtEl);
+    const amtErr = document.getElementById('reg-amount-error');
+    if (!amtEl.value || isNaN(amount) || amount <= 0) {
+      amtErr.classList.add('visible'); valid = false;
+    } else { amtErr.classList.remove('visible'); }
+
+    const rate   = parseFloat(document.getElementById('reg-interest').value);
+    const period = document.getElementById('reg-period').value;
+    const rPct   = (rate * 100) + '%';
+
+    let days = null;
+    if (period === 'daily') {
+      const s = document.getElementById('reg-date-start').value;
+      const e = document.getElementById('reg-date-end').value;
+      const dateErr = document.getElementById('reg-date-error');
+      if (!s || !e || daysBetween(s, e) <= 0) {
+        dateErr.classList.add('visible'); valid = false;
+      } else {
+        dateErr.classList.remove('visible');
+        days = daysBetween(s, e);
+      }
+    }
+
+    if (!valid) return;
+
+    let interest = 0, formula = '';
+
+    if (period === 'monthly') {
+      interest = r2(amount * rate);
+      formula  = `<span class="step">${h(fmt(amount))} × ${h(rPct)} = ${h(fmt(interest))}</span>`;
+
+    } else if (period === '15days') {
+      interest = r2((amount * rate) / 2);
+      formula  = `<span class="step">(${h(fmt(amount))} × ${h(rPct)}) ÷ 2 = ${h(fmt(interest))}</span>`;
+
+    } else {
+      const dailyRounded = r2((amount * rate) / 30);
+      interest = r2(dailyRounded * days);
+      formula  = `<span class="step">Step 1 — Daily rate: ${h(fmt(amount))} × ${h(rPct)} ÷ 30 = ${h(fmt(dailyRounded))}</span>` +
+                 `<span class="step">Step 2 — Total: ${h(fmt(dailyRounded))} × ${h(days + ' day' + (days !== 1 ? 's' : ''))} = ${h(fmt(interest))}</span>`;
+    }
+
+    document.getElementById('reg-result-value').textContent = '₱ ' + fmt(interest);
+    document.getElementById('reg-result-formula').innerHTML = formula;
+    document.getElementById('reg-result').classList.add('visible');
+  }
+
+  // ── INCENTIVES ────────────────────────────────────────────────────────────
+
+  function onIncPeriodChange() {
+    onIncDatesChange(); // refresh summary
+    document.getElementById('inc-result').classList.remove('visible');
+  }
+
+  function onIncDatesChange() {
+    const s    = document.getElementById('inc-date-start').value;
+    const e    = document.getElementById('inc-date-end').value;
+    const pill = document.getElementById('inc-day-pill');
+    const sum  = document.getElementById('inc-date-summary');
+    const err  = document.getElementById('inc-date-error');
+    if (s && e) {
+      const total = daysBetween(s, e);
+      if (total <= 0) { pill.classList.remove('visible'); err.classList.add('visible'); return; }
+      err.classList.remove('visible');
+      pill.classList.add('visible');
+      const period = document.getElementById('inc-period').value;
+      if (period === 'daily') {
+        sum.textContent = `${total} day${total !== 1 ? 's' : ''} between selected dates`;
+      } else {
+        const { months, remDays } = splitMonthsDays(s, e);
+        sum.textContent = `${months} full month${months !== 1 ? 's' : ''}` +
+          (remDays > 0 ? ` + ${remDays} remaining day${remDays !== 1 ? 's' : ''}` : '');
+      }
+    }
+  }
+
+  function calcIncentive() {
+    let valid = true;
+
+    const amtEl  = document.getElementById('inc-amount');
+    const amount = getRaw(amtEl);
+    const amtErr = document.getElementById('inc-amount-error');
+    if (!amtEl.value || isNaN(amount) || amount <= 0) {
+      amtErr.classList.add('visible'); valid = false;
+    } else { amtErr.classList.remove('visible'); }
+
+    const s = document.getElementById('inc-date-start').value;
+    const e = document.getElementById('inc-date-end').value;
+    const dateErr = document.getElementById('inc-date-error');
+    if (!s || !e || daysBetween(s, e) <= 0) {
+      dateErr.classList.add('visible'); valid = false;
+    } else { dateErr.classList.remove('visible'); }
+
+    if (!valid) return;
+
+    const period   = document.getElementById('inc-period').value;
+    const INC_RATE = parseFloat(document.getElementById('inc-interest').value);
+    const rPct     = (INC_RATE * 100) + '%';
+
+    let interest = 0, formula = '';
+
+    if (period === 'daily') {
+      const totalDays    = daysBetween(s, e);
+      const dailyRounded = r2((amount * INC_RATE) / 30);
+      interest = r2(dailyRounded * totalDays);
+      formula  = `<span class="step">Step 1 — Daily rate: ${h(fmt(amount))} × ${h(rPct)} ÷ 30 = ${h(fmt(dailyRounded))}</span>` +
+                 `<span class="step">Step 2 — Total: ${h(fmt(dailyRounded))} × ${h(totalDays + ' day' + (totalDays !== 1 ? 's' : ''))} = ${h(fmt(interest))}</span>`;
+
+    } else {
+      // Monthly: round base first, then × months, plus remaining days
+      const { months, remDays } = splitMonthsDays(s, e);
+
+      const baseInterest = r2(amount * INC_RATE);
+      const part1 = r2(baseInterest * months);
+      formula = `<span class="step">Part 1 base: ${h(fmt(amount))} × ${h(rPct)} = ${h(fmt(baseInterest))}</span>` +
+                `<span class="step">Part 1 (× ${h(months + ' month' + (months !== 1 ? 's' : ''))}): ${h(fmt(baseInterest))} × ${h(months)} = ${h(fmt(part1))}</span>`;
+
+      let part2 = 0;
+      if (remDays > 0) {
+        const dailyForRem = r2((amount * INC_RATE) / 30);
+        part2 = r2(dailyForRem * remDays);
+        formula += `<span class="step">Part 2 daily rate: ${h(fmt(amount))} × ${h(rPct)} ÷ 30 = ${h(fmt(dailyForRem))}</span>` +
+                   `<span class="step">Part 2 (${h(remDays + ' day' + (remDays !== 1 ? 's' : ''))}): ${h(fmt(dailyForRem))} × ${h(remDays)} = ${h(fmt(part2))}</span>`;
+      }
+
+      interest = r2(part1 + part2);
+      if (remDays > 0) {
+        formula += `<span class="step">Total: ${h(fmt(part1))} + ${h(fmt(part2))} = ${h(fmt(interest))}</span>`;
+      }
+    }
+
+    document.getElementById('inc-result-value').textContent = '₱ ' + fmt(interest);
+    document.getElementById('inc-result-formula').innerHTML = formula;
+    document.getElementById('inc-result').classList.add('visible');
+  }
+
+  // Enter key
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('section-regular').classList.contains('active')) calcRegular();
+    else calcIncentive();
+  });
+</script>
+</body>
+</html>
